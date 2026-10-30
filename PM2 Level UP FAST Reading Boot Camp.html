@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PM2 Reading Boot Camp</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: navy key-ring header band, day tabs, then each day as four stacked steps; passage + questions side by side on wide screens */
+:root{
+  --ink:#1c2a4a; --paper:#f3f6fb; --card:#ffffff; --line:#d7deeb; --muted:#566381;
+  --gold:#c98a12; --gold-soft:#fbefd2; --navy:#1c2a4a; --on-navy:#ffffff;
+  --ok:#1d7f54; --ok-soft:#e1f3ea; --bad:#b93a33; --bad-soft:#fbe5e3;
+  --d1:#d9483d; --d2:#d97412; --d3:#24895a; --d4:#2a6fc4; --d5:#7d45c4;
+  --display:"Bree Serif", Georgia, serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --ink:#e7ecf7; --paper:#111a2d; --card:#1a2440; --line:#2c3a5e; --muted:#a4afcc;
+  --gold:#f0b744; --gold-soft:#3a2f14; --navy:#0b1222; --on-navy:#ffffff;
+  --ok:#5fcf98; --ok-soft:#163a2a; --bad:#ff8a80; --bad-soft:#45201d;
+  --d1:#ff7a6e; --d2:#ffa24d; --d3:#5cc893; --d4:#6aa8ff; --d5:#b48bff; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --ink:#e7ecf7; --paper:#111a2d; --card:#1a2440; --line:#2c3a5e; --muted:#a4afcc;
+  --gold:#f0b744; --gold-soft:#3a2f14; --navy:#0b1222; --on-navy:#ffffff;
+  --ok:#5fcf98; --ok-soft:#163a2a; --bad:#ff8a80; --bad-soft:#45201d;
+  --d1:#ff7a6e; --d2:#ffa24d; --d3:#5cc893; --d4:#6aa8ff; --d5:#b48bff; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--navy)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3,h4{font-family:var(--display);font-weight:400;line-height:1.2;text-wrap:balance;margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* header */
+.top{background:var(--navy);color:var(--on-navy)}
+.top .wrap{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between;padding-block:16px}
+.brand{display:flex;gap:12px;align-items:center;min-width:0}
+.brand img{height:64px;width:auto;border-radius:8px;background:#fff}
+.brand .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#f4c766}
+.brand h1{font-size:clamp(24px,4vw,34px)}
+.who{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.who label{font-size:14px;color:#cfd8ee}
+.who input{border:0;border-radius:10px;padding:10px 12px;font:inherit;width:200px;max-width:100%;background:#fff;color:#1c2a4a}
+.ring{display:flex;gap:6px;align-items:center}
+.ring svg{width:34px;height:34px}
+.saved{font-size:12px;color:#cfd8ee}
+
+/* tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.tabs .wrap{display:flex;gap:8px;overflow-x:auto;padding-block:10px}
+.tab{flex:0 0 auto;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;display:flex;gap:8px;align-items:center;font-weight:700;font-size:15px}
+.tab .dot{width:12px;height:12px;border-radius:50%;background:var(--c)}
+.tab[aria-selected="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--card))}
+.tab .done{color:var(--ok);font-size:14px}
+
+/* day hero */
+main{padding-block:22px 60px}
+.hero{display:grid;gap:10px;border-left:8px solid var(--c);padding:6px 0 6px 18px;margin-bottom:22px}
+.hero .eyebrow{font-weight:700;color:var(--c);letter-spacing:.1em;text-transform:uppercase;font-size:13px}
+.hero h2{font-size:clamp(28px,5vw,42px)}
+.hero p{margin:0;max-width:65ch;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--card);color:var(--muted);font-variant-numeric:tabular-nums}
+
+.step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px}
+.step-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.step-head .num{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--c);color:#fff;font-weight:700;flex:0 0 auto}
+.step-head h3{font-size:24px;display:flex;gap:10px;align-items:center}
+.speak{border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:14px;display:inline-flex;gap:6px;align-items:center}
+.speak.on{background:var(--gold-soft);border-color:var(--gold)}
+.intro{max-width:70ch;margin:0 0 14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.lcard{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--paper)}
+.lcard h4{font-size:19px;margin-bottom:6px;color:var(--c)}
+.lcard p{margin:0}
+.lcard .code{display:block;font-size:12px;color:var(--muted);margin-top:8px}
+.trap{margin-top:14px;border:2px dashed var(--bad);border-radius:12px;padding:12px 14px;background:var(--bad-soft)}
+.trap strong{color:var(--bad)}
+
+/* worked example */
+.excerpt{border-left:4px solid var(--c);padding:8px 14px;background:var(--paper);border-radius:0 10px 10px 0;margin:0 0 12px;font-style:italic;max-width:70ch}
+.think{display:grid;gap:10px;counter-reset:t;margin:0;padding:0;list-style:none}
+.think li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}
+.think li::before{counter-increment:t;content:counter(t);display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--gold-soft);color:var(--ink);font-weight:700;font-size:14px}
+.reveal{margin-top:10px;border:1.5px solid var(--c);background:transparent;color:var(--ink);border-radius:10px;padding:8px 14px;font-weight:700}
+
+/* practice */
+.practice{display:grid;gap:18px}
+@media (min-width:900px){ .practice{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+  .passage{position:sticky;top:76px;max-height:calc(100vh - 96px);overflow:auto} }
+.passage{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--paper);min-width:0}
+.passage h4{font-size:22px;margin-bottom:2px}
+.passage .by{color:var(--muted);font-size:14px;margin:0 0 10px}
+.passage p{margin:0 0 12px;position:relative}
+.passage .pn{display:inline-block;min-width:26px;font-size:12px;font-weight:700;color:var(--c);font-variant-numeric:tabular-nums}
+.poem{display:grid;gap:2px;margin:0 0 10px}
+.poem div{display:grid;grid-template-columns:30px 1fr;gap:6px}
+.poem .ln{font-size:12px;color:var(--muted);text-align:right;padding-top:3px;font-variant-numeric:tabular-nums}
+.poem .gap{height:8px}
+.sidebar{border:2px solid var(--c);border-radius:10px;padding:10px 14px;margin:6px 0 14px;background:var(--card)}
+.sidebar h5{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 6px}
+.sidebar dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0}
+.sidebar dt{font-weight:700;color:var(--c);font-variant-numeric:tabular-nums}
+.sidebar dd{margin:0}
+figure{margin:4px 0 14px}
+figure svg{width:100%;height:auto;max-width:100%;display:block;border-radius:10px}
+figcaption{font-size:14px;color:var(--muted);margin-top:6px}
+.passage h6{font-family:var(--display);font-weight:400;font-size:18px;margin:14px 0 6px;color:var(--c)}
+.textB{border-top:2px solid var(--line);margin-top:16px;padding-top:12px}
+.flyer{border:2px solid var(--muted);border-radius:10px;padding:12px 14px;background:var(--card);font-family:var(--display);font-size:18px}
+
+.qlist{display:grid;gap:14px;min-width:0}
+.q{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card)}
+.q .meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+.q .skill{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--c)}
+.q .stem{font-weight:700;margin:0 0 10px}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start}
+.opt .l{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);font-weight:700;font-size:14px}
+.opt:hover:not([disabled]){border-color:var(--c)}
+.opt[disabled]{cursor:default}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.right .l{background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .l{background:var(--bad);border-color:var(--bad);color:#fff}
+.fb{margin-top:10px;border-radius:10px;padding:10px 12px;font-size:16px}
+.fb.ok{background:var(--ok-soft)} .fb.no{background:var(--bad-soft)}
+.fb b{display:block;margin-bottom:2px}
+.score{font-variant-numeric:tabular-nums;font-weight:700}
+
+textarea{width:100%;min-height:120px;border:2px solid var(--line);border-radius:12px;padding:12px;font:inherit;background:var(--paper);color:var(--ink);resize:vertical}
+.lockp{font-weight:700;margin:0 0 10px;max-width:70ch}
+.hint{font-size:14px;color:var(--muted)}
+.keyban{display:flex;gap:14px;align-items:center;border:2px solid var(--gold);background:var(--gold-soft);border-radius:14px;padding:14px 16px;margin-top:16px}
+.keyban svg{width:44px;height:44px;flex:0 0 auto}
+.navbtns{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px}
+.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:700;background:var(--navy);color:var(--on-navy)}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn.gold{background:var(--gold);color:#1c2a4a}
+
+/* start + finish */
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:6px}
+.how div{background:var(--paper);border-radius:12px;padding:12px;border:1px solid var(--line)}
+.how b{font-family:var(--display);font-weight:400;font-size:18px;display:block}
+.plan{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.plan li{display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card)}
+.plan .d{font-family:var(--display);color:var(--c);font-size:18px}
+.cert{border:3px double var(--gold);border-radius:18px;padding:24px;text-align:center;background:var(--card)}
+.cert h2{font-size:clamp(28px,5vw,40px)}
+.cert .nm{font-family:var(--display);font-size:30px;color:var(--gold);margin:6px 0}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:8px;text-align:left}
+.strats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:14px;text-align:left}
+.strats div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--paper)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:13.5px;padding-block:18px}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50;width:100%;height:100%}
+@media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto!important} }
+</style>
+</head>
+<body>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <img id="logo" alt="The Literacy Locksmith logo" hidden>
+      <div>
+        <div class="eyebrow">The Literacy Locksmith · Grade 6 FAST</div>
+        <h1>PM2 Reading Boot Camp</h1>
+      </div>
+    </div>
+    <div class="who">
+      <label for="sname">My name</label>
+      <input id="sname" autocomplete="off" placeholder="First name + last initial">
+    </div>
+    <div>
+      <div class="ring" id="ring" aria-label="Key ring progress"></div>
+      <div class="saved" id="saved">Your work saves on this iPad.</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Boot camp days"><div class="wrap" id="tabs" role="tablist"></div></nav>
+
+<main class="wrap" id="view"></main>
+
+<footer><div class="wrap">The Literacy Locksmith, created and copyrighted by Donna Rees. All passages are original and written for this boot camp. Aligned to Florida B.E.S.T. Grade 6 ELA benchmarks assessed on FAST.</div></footer>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script>
+/* ---------- CONTENT ---------- */
+const KEY_SVG = (fill, stroke) => `<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="15" cy="24" r="10" fill="${fill}" stroke="${stroke}" stroke-width="3"/><circle cx="15" cy="24" r="4" fill="var(--card)" stroke="${stroke}" stroke-width="2"/><path d="M25 24h19M36 24v7M42 24v5" fill="none" stroke="${stroke}" stroke-width="4" stroke-linecap="round"/></svg>`;
+
+const DAYS = [
+{ id:"d1", color:"var(--d1)", tab:"Story Detectives", title:"Story Detectives: Plot, Theme & Point of View",
+  time:"About 35 minutes", codes:["ELA.6.R.1.1","ELA.6.R.1.2","ELA.6.R.1.3"],
+  blurb:"Stories on the FAST ask how events connect, what message the author is building, and how the narrator shapes what you know.",
+  lesson:{ intro:"Every story is a chain. Something happens, a character reacts, makes a choice, and that choice causes the next event. When you can trace the chain, plot and theme questions get much easier.",
+    cards:[
+      {h:"Plot is a chain", p:"Action, then response, then decision, then consequence. Conflict pushes characters to make choices. The turning point is the moment that changes the direction of the story.", code:"ELA.6.R.1.1"},
+      {h:"Theme vs. topic", p:"A topic is one or two words, like friendship. A theme is a complete sentence about life, like: True friends help even when it costs them something. Themes grow across the whole story.", code:"ELA.6.R.1.2"},
+      {h:"Point of view vs. perspective", p:"Point of view is WHO tells the story: first person (I), second (you), or third (he, she, they). Perspective is HOW the narrator sees things. A first-person narrator can only tell you what they know and believe.", code:"ELA.6.R.1.3"}
+    ],
+    trap:"A theme is never a single word, and it is never just a summary of what happened. If your answer could not be true in another story, it is probably a summary, not a theme." },
+  example:{ text:"Kai slammed his locker. The coach had posted the team list, and his name was not on it. He walked home the long way, past the empty basketball court, and picked up a ball someone had left behind. He shot until the streetlights came on.",
+    q:"What theme is the author beginning to develop?",
+    steps:["Find the conflict: Kai did not make the team.","Look at his response and decision: he does not quit. He practices alone until dark.","Name the topic first: disappointment. Then turn it into a complete message about life.","Theme: Disappointment can push a person to work even harder. The evidence is that he shot until the streetlights came on."] },
+  passage:{ title:"The Mural", by:"An original short story", type:"prose", paras:[
+    "Our town's library had given my art club one wall to paint for the Founders' Day celebration, and I had claimed the biggest section for myself: a giant sea turtle gliding through a coral reef. I had sketched it for three weeks. Every scale on its shell was planned. So when Mom told me my little brother, Leo, wanted to help, I said no before she even finished the sentence. Leo was nine. Leo colored outside the lines on purpose.",
+    "“He just wants to be part of it, Ava,” Mom said. “He can be part of it by staying home,” I answered.",
+    "For two weekends, I painted alone. The turtle came alive one blue stroke at a time. Then, on Thursday night, two days before the celebration, a storm rolled in off the Gulf. Rain blew sideways under the library's awning, and by morning, long gray streaks ran straight through my reef. The turtle's flipper had melted into a muddy smear.",
+    "I stood in front of the wall and felt my throat tighten. There was no way I could repaint the whole section alone in one day. I thought about telling Ms. Patel, the club sponsor, to just paint over it.",
+    "That afternoon, Leo showed up at the library with a shoebox. Inside were dozens of tiny fish he had cut from cardboard and painted neon orange, yellow, and green. “I made these while you were painting,” he said quietly. “In case the reef needed more fish.”",
+    "I almost told him the reef did not need anything from him. Then I looked at the streaks again. The fish were bright and a little lopsided, and they were exactly the right size to cover the worst damage.",
+    "“Can you help me glue them?” I asked.",
+    "We worked until the library lights flicked off. Leo handed me fish, and I fixed the turtle's flipper. On Saturday, people crowded around our section. A woman pointed at the school of neon fish and said it was her favorite part. I did not correct her. It was my favorite part too."
+  ]},
+  qs:[
+    {skill:"Plot effect", code:"ELA.6.R.1.1", stem:"How does the storm affect the plot of the story?",
+     opts:["It creates the main problem by damaging the mural, which forces Ava to decide whether to give up or accept help.","It explains why the Founders' Day celebration is canceled.","It shows that Ava painted her section too quickly.","It introduces Ms. Patel as the most important character."], a:0,
+     why:"Trace the chain. The rain ruins the reef (action), Ava feels hopeless (response), and she has to decide what to do (decision). The celebration is not canceled, so B is false."},
+    {skill:"Turning point", code:"ELA.6.R.1.1", stem:"Which event is the turning point of the story?",
+     opts:["Mom asks Ava to let Leo help.","Ava sketches the turtle for three weeks.","Ava asks Leo to help her glue the fish.","A woman at the celebration praises the fish."], a:2,
+     why:"A turning point changes the story's direction. When Ava asks for help, she switches from working alone to working with Leo. Choice D happens after the problem is solved, so it is part of the resolution."},
+    {skill:"Theme", code:"ELA.6.R.1.2", stem:"Which statement best expresses a theme of the story?",
+     opts:["Sea turtles live in coral reefs.","Storms can damage artwork.","Little brothers are always annoying.","Accepting help from others can make our work better than what we could do alone."], a:3,
+     why:"A theme is a complete message about life that the whole story supports. A is a fact, B is just an event, and C is Ava's opinion at the start, which changes by the end."},
+    {skill:"Theme evidence", code:"ELA.6.R.1.2", stem:"Which detail best supports the theme you chose?",
+     opts:["“I had sketched it for three weeks.”","“A woman pointed at the school of neon fish and said it was her favorite part.”","“Rain blew sideways under the library's awning.”","“Leo was nine.”"], a:1,
+     why:"The best evidence proves the message. The fish Leo made became a favorite part of the mural, which shows that his help made the work better."},
+    {skill:"Narrator influence", code:"ELA.6.R.1.3", stem:"The story is told in first person by Ava. How does this point of view affect what readers know about Leo?",
+     opts:["Readers know Leo's private thoughts throughout the story.","Readers first see Leo only through Ava's negative opinion, so his kindness is a surprise when he brings the fish.","Readers learn about Leo from an outside narrator who knows everyone's feelings.","Readers never find out why Leo made the fish."], a:1,
+     why:"Compare access to information. A first-person narrator only knows what she sees and believes. Ava thinks Leo is careless, so readers are surprised too. D is false because Leo explains why he made them."},
+    {skill:"Perspective shift", code:"ELA.6.R.1.3", stem:"Which sentence best shows that Ava's perspective about Leo has changed?",
+     opts:["“He can be part of it by staying home.”","“I thought about telling Ms. Patel, the club sponsor, to just paint over it.”","“Leo colored outside the lines on purpose.”","“I did not correct her. It was my favorite part too.”"], a:3,
+     why:"Perspective is the narrator's outlook. At the start Ava does not want Leo near her work. At the end she calls his fish her favorite part. A and C show her old view."}
+  ],
+  lock:"Write the theme of “The Mural” as a complete sentence. Then copy one detail from the story that supports it." },
+
+{ id:"d2", color:"var(--d2)", tab:"Poetry Power", title:"Poetry Power: Poetic Form & Figurative Language",
+  time:"About 35 minutes", codes:["ELA.6.R.1.4","ELA.6.R.3.1"],
+  blurb:"Poetry questions ask you to recognize a poem's form and to explain what figurative language means and how it creates tone.",
+  lesson:{ intro:"Poets choose a form on purpose, and they choose every comparison on purpose. Your job is to name what they did, then explain WHY it matters.",
+    cards:[
+      {h:"Sonnet", p:"14 lines with a set rhyme pattern. Many end with a rhyming couplet. A sonnet usually has a volta, or turn, where the idea shifts, often marked by a word like but or yet.", code:"ELA.6.R.1.4"},
+      {h:"Villanelle & free verse", p:"A villanelle has 19 lines and two refrains, lines that repeat over and over. Free verse has no set rhyme or rhythm. Count lines and look for repeats.", code:"ELA.6.R.1.4"},
+      {h:"Comparisons", p:"Simile: compares using like or as. Metaphor: says one thing IS another. Personification: gives human actions to non-human things. Hyperbole: huge exaggeration.", code:"ELA.6.R.3.1"},
+      {h:"Sound & sayings", p:"Alliteration: repeated beginning sounds (bare as bones). Onomatopoeia: words that sound like what they mean (crack, buzz). Idiom: a saying that does not mean exactly what it says.", code:"ELA.6.R.3.1"}
+    ],
+    trap:"Naming the device is only half the job. FAST answers usually ask what the device MEANS or how it affects the TONE. Always ask: what does this make me picture or feel?" },
+  example:{ text:"After the fire drill, our classroom was a zoo.",
+    q:"What does the figurative language suggest about the classroom?",
+    steps:["Name it: the classroom IS a zoo, with no like or as, so it is a metaphor.","Picture it: a zoo is loud, wild, and full of animals moving everywhere.","Interpret it: the class was noisy and out of control after the drill.","Tone: a little frazzled and funny. The right answer will talk about meaning, not just the label."] },
+  passage:{ title:"The Old Oak in Winter", by:"An original sonnet", type:"poem", lines:[
+    "The old oak shivers in the January wind,","its branches bare as bones against the gray;","the snow comes whispering where the leaves had been,","and every bird it sheltered flew away.",
+    "It groans and creaks (crack, crack!) through every storm,","a tired giant, bent beneath the cold;","it holds no nest, no song, no summer warm,","and looks a thousand years beyond too old.",
+    "But underneath the frozen, sleeping ground,","its roots are drinking deep and holding tight;","they wait in silence, never making sound,","for April's sun to wake them with its light.",
+    "So do not judge the oak by winter's frown:","the strongest growth goes on where roots reach down."
+  ], breaks:[4,8,12]},
+  qs:[
+    {skill:"Poetic form", code:"ELA.6.R.1.4", stem:"Which feature best shows that “The Old Oak in Winter” is a sonnet?",
+     opts:["It has 19 lines with two lines that keep repeating.","It has 14 lines with a regular rhyme pattern and ends with a rhyming couplet.","It has three lines with a 5-7-5 syllable pattern.","It has no rhyme or regular rhythm."], a:1,
+     why:"Count the lines: there are 14. The rhyme follows a pattern (wind/been, gray/away) and the last two lines rhyme (frown/down). A describes a villanelle, C a haiku, D free verse."},
+    {skill:"Volta / shift", code:"ELA.6.R.1.4", stem:"Line 9 begins with the word “But.” How do lines 9–14 change the poem?",
+     opts:["They list more ways the tree suffers in winter.","They switch to a new speaker telling a different story.","They repeat the first four lines word for word.","They shift from describing the tree as weak and lonely to showing that it is quietly growing strong."], a:3,
+     why:"This is the volta. Lines 1–8 show a cold, lonely, worn-out tree. After “But,” the poem reveals the roots drinking deep and waiting for spring."},
+    {skill:"Metaphor meaning", code:"ELA.6.R.3.1", stem:"In line 6, the speaker calls the oak “a tired giant.” What does this metaphor suggest?",
+     opts:["The tree is huge and seems worn out by the harsh weather.","The tree is dangerous and might fall on someone.","A real giant is hiding behind the tree.","The tree is the tallest tree in Florida."], a:0,
+     why:"Name it, then interpret it. Giant shows size, and tired shows how the winter has worn it down. Nothing in the poem suggests danger."},
+    {skill:"Sound device effect", code:"ELA.6.R.3.1", stem:"How does the onomatopoeia “crack, crack” in line 5 affect the poem?",
+     opts:["It helps readers hear the strain the storm puts on the old tree.","It shows that birds are returning to the tree.","It makes the poem's tone cheerful.","It names the kind of tree in the poem."], a:0,
+     why:"Onomatopoeia lets you hear the moment. The sound of cracking wood makes the storm feel harsh and the tree feel under stress."},
+    {skill:"Hyperbole", code:"ELA.6.R.3.1", stem:"Read line 8: “and looks a thousand years beyond too old.” Which device does the poet use, and why?",
+     opts:["Simile, to compare the tree to a clock","Hyperbole, to exaggerate how worn out the tree appears","Alliteration, to create a musical sound","Idiom, to show that the tree is wise"], a:1,
+     why:"A thousand years beyond too old is not meant literally. It is a huge exaggeration that shows how ancient and tired the oak looks in winter."},
+    {skill:"Tone shift", code:"ELA.6.R.3.1", stem:"Which choice best describes how the tone changes from the beginning of the poem to the end?",
+     opts:["From hopeful to angry","From funny to serious","From gloomy and lonely to patient and hopeful","From excited to bored"], a:2,
+     why:"Words like shivers, bare, and groans create a gloomy tone. After the volta, words like drinking deep, wake, and strongest growth make the tone hopeful."}
+  ],
+  lock:"Find one example of personification in the poem. Copy the words, then explain what it makes you picture and how it makes the poem feel." },
+
+{ id:"d3", color:"var(--d3)", tab:"Info Text", title:"Info Text: Text Features, Central Idea & Author's Purpose",
+  time:"About 40 minutes", codes:["ELA.6.R.2.1","ELA.6.R.2.2","ELA.6.R.2.3"],
+  blurb:"Informational questions ask why sections and features are there, what the central idea is, and how two authors handle the same subject differently.",
+  lesson:{ intro:"In nonfiction, every heading, caption, and fact box has a job. And every author chooses what to include, what to leave out, and how to describe it.",
+    cards:[
+      {h:"Text features have jobs", p:"Headings preview what a section is about. Captions explain pictures. Sidebars and charts add quick facts or show relationships. Ask: what does this feature help the reader understand?", code:"ELA.6.R.2.1"},
+      {h:"Central idea", p:"The central idea is what the WHOLE text is mostly about. Find details that repeat across sections and unite them into one sentence. A single detail is too small.", code:"ELA.6.R.2.2"},
+      {h:"Purpose across accounts", p:"Authors show purpose through selection (what they include), omission (what they leave out), and framing (the words they use). Comparing two texts about the same thing reveals each author's goal.", code:"ELA.6.R.2.3"}
+    ],
+    trap:"Purpose is the author's GOAL (inform, persuade, entertain). Perspective is the author's OUTLOOK or attitude. Also watch for answer choices that are true details but too narrow to be the central idea." },
+  example:{ text:"Sea turtle hatchlings crawl toward the brightest horizon, which is usually the moonlit ocean. Bright beachfront lights can pull them toward roads instead. Many Florida beach towns now require turtle-safe lighting during nesting season.",
+    q:"What is the central idea of this paragraph?",
+    steps:["List the details: hatchlings follow light; beach lights mislead them; towns are changing their lights.","Look for the thread that connects all three: lights and turtle safety.","Unite them in one sentence: Artificial lights put hatchlings in danger, so communities are changing how they light beaches.","Check: does each detail support my sentence? Yes, so it is not too narrow."] },
+  passage:{ title:"Florida's Tangled Guardians", by:"An original informational article", type:"article" },
+  qs:[
+    {skill:"Central idea", code:"ELA.6.R.2.2", stem:"Which statement best expresses the central idea of the article?",
+     opts:["Red mangroves have prop roots that look like stilts.","Mangroves are valuable to Florida because they shelter sea life and protect coasts, so people are working to protect them.","Hurricanes cause flooding in many parts of Florida.","Many people want to build homes near the water."], a:1,
+     why:"Unite the sections: survival in salt, nursery for sea life, storm protection, and protection by people. A is one detail, which is too narrow. C and D are not what the article is mostly about."},
+    {skill:"Supporting detail", code:"ELA.6.R.2.2", stem:"Which detail best supports the central idea that mangroves protect Florida's coasts?",
+     opts:["“Florida is home to three main kinds: red, black, and white mangroves.”","“Some mangroves block much of the salt at their roots.”","“Thick mangrove forests slow the water down and help reduce flooding and erosion.”","“Red mangroves are the easiest to spot.”"], a:2,
+     why:"The question asks about protecting coasts. Only C explains how mangroves reduce storm damage. The others are true but about different ideas."},
+    {skill:"Section purpose", code:"ELA.6.R.2.1", stem:"Why does the author include the heading “Living Seawalls”?",
+     opts:["To preview that the section explains how mangroves protect the shore like a wall","To tell readers that mangroves are made of concrete","To show where seawalls are built in Florida","To introduce a story about one hurricane"], a:0,
+     why:"Headings preview a section's organization. A seawall blocks waves, and the section explains how mangroves do the same job naturally. The word living tells you it is a comparison, not concrete."},
+    {skill:"Text feature", code:"ELA.6.R.2.1", stem:"How does the “By the Numbers” sidebar add to the article?",
+     opts:["It repeats the information from the introduction.","It explains how mangroves remove salt from water.","It argues that mangroves should be cleared.","It gives quick facts about how much mangrove forest Florida has and how the law protects it."], a:3,
+     why:"Sidebars add context. These facts give the size of Florida's mangrove forests and the year of the protection law, which supports the final section."},
+    {skill:"Comparing accounts", code:"ELA.6.R.2.3", stem:"Read the flyer in Text B. How is its purpose different from the article's purpose?",
+     opts:["Both authors want readers to protect mangroves.","The flyer gives more scientific facts than the article.","The article informs readers about why mangroves matter, while the flyer tries to sell homes by describing mangroves as useless.","The article is trying to sell homes, while the flyer teaches about sea life."], a:2,
+     why:"Compare goals. The article explains benefits and protection. The flyer wants buyers, so it leaves out every benefit (omission) and uses negative words (framing)."},
+    {skill:"Framing", code:"ELA.6.R.2.3", stem:"Which words in the flyer best show how its author frames mangroves?",
+     opts:["“open water views”","“useless, mosquito-filled swamp”","“40 brand-new waterfront homes”","“private dock”"], a:1,
+     why:"Framing means the word choices that shape how readers feel. Useless and mosquito-filled make mangroves sound worthless, which helps the flyer's goal of selling homes."}
+  ],
+  lock:"In one sentence, write the central idea of “Florida's Tangled Guardians.” Then explain how the flyer author's purpose is different." },
+
+{ id:"d4", color:"var(--d4)", tab:"Argument", title:"Argument Lab: Claims, Reasoning & Rhetorical Appeals",
+  time:"About 35 minutes", codes:["ELA.6.R.2.4","ELA.6.R.3.4"],
+  blurb:"Argument questions ask you to find the claim, judge the evidence, spot broken reasoning, and identify ethos, pathos, and logos.",
+  lesson:{ intro:"An argument is like a bridge. The claim is where the author wants you to go, evidence is the support, and reasoning is the link that connects them. If a link is broken, the argument is weak.",
+    cards:[
+      {h:"Claim, evidence, reasoning", p:"Claim: the author's position. Evidence: facts, data, examples, or expert quotes. Reasoning: the explanation of HOW the evidence proves the claim.", code:"ELA.6.R.2.4"},
+      {h:"Faulty reasoning", p:"Hasty generalization: a big conclusion from too few examples. Ad hominem: attacking the person instead of the idea. Ad populum: everyone thinks it, so it must be true.", code:"ELA.6.R.2.4"},
+      {h:"Rhetorical appeals", p:"Ethos: builds trust and credibility (experience, experts). Pathos: stirs emotions (stories, vivid images). Logos: uses logic (facts, numbers, cause and effect).", code:"ELA.6.R.3.4"}
+    ],
+    trap:"Evidence is not the same as reasoning. Evidence is the fact. Reasoning explains why that fact supports the claim. In Grade 6 you identify appeals; you do not have to decide which one is best." },
+  example:{ text:"Students should be allowed to keep water bottles at their desks. When students are thirsty, they leave class to use the fountain. In Mr. Lee's class, fountain passes dropped by half during a one-month water bottle trial. Fewer trips out of the room means more time learning.",
+    q:"Map the argument: what is the claim, the evidence, and the reasoning?",
+    steps:["Claim (the position): Students should keep water bottles at their desks.","Evidence (the proof): fountain passes dropped by half during a one-month trial.","Reasoning (the link): fewer trips out of the room means more time learning.","Appeal: numbers and cause and effect make this mostly logos."] },
+  passage:{ title:"Middle Schoolers Need Recess Too", by:"An original opinion article by Marcus Hill, student council representative", type:"prose", paras:[
+    "Every day at 11:40, I watch the same thing happen in my fourth-period class. Heads drop onto desks. Feet tap. Someone asks to go to the bathroom just to walk down the hallway. We are not bad students. We are students who have been sitting still for almost four hours. Our school should give every middle schooler a 20-minute recess each day.",
+    "I have served on student council for two years, and this semester I have talked with teachers and classmates about this idea. Coach Rivera, who has taught PE at our school for fifteen years, told me, “Kids who move during the day come back to class ready to focus.”",
+    "Research agrees. The American Academy of Pediatrics has called recess a “crucial” part of the school day because it gives students a needed break. When our student council surveyed 212 students last month, 81 percent said they have trouble paying attention in late-morning classes. A short break to move and talk could fix that problem before lunch.",
+    "Picture an eleven-year-old who has been in classrooms since 7:45 a.m. Her legs ache, her mind is foggy, and she is counting the minutes on the clock instead of listening to the lesson. Isn't she the person this school is supposed to help?",
+    "Besides, my cousin's school in Ocala added recess last year, and his grades went up. That proves recess will raise every student's grades.",
+    "Some teachers worry that recess would take away valuable class time. That is a fair concern. However, students already lose minutes in every class while restless classmates settle down. A rested student learns more in less time, so a short break could actually give teachers back time.",
+    "Recess is not just for little kids. Let's give middle schoolers the break their brains need."
+  ]},
+  qs:[
+    {skill:"Claim", code:"ELA.6.R.2.4", stem:"Which sentence states the author's claim?",
+     opts:["“Heads drop onto desks.”","“Some teachers worry that recess would take away valuable class time.”","“We are not bad students.”","“Our school should give every middle schooler a 20-minute recess each day.”"], a:3,
+     why:"The claim is the position the whole article argues for. Every paragraph supports the idea of a daily recess. B is the counterclaim."},
+    {skill:"Strongest evidence", code:"ELA.6.R.2.4", stem:"Which evidence most directly supports the idea that students need a break in the late morning?",
+     opts:["81 percent of 212 surveyed students said they have trouble paying attention in late-morning classes.","Marcus has served on student council for two years.","Marcus's cousin goes to school in Ocala.","Recess is not just for little kids."], a:0,
+     why:"Strong evidence is specific and connects to the claim. The survey data directly shows a focus problem in the late morning."},
+    {skill:"Ethos", code:"ELA.6.R.3.4", stem:"Which sentence is the best example of ethos?",
+     opts:["“Her legs ache, her mind is foggy...”","“Heads drop onto desks. Feet tap.”","“Coach Rivera, who has taught PE at our school for fifteen years, told me...”","“Let's give middle schoolers the break their brains need.”"], a:2,
+     why:"Ethos builds credibility. Quoting a teacher with fifteen years of experience makes the argument more trustworthy. A is pathos."},
+    {skill:"Pathos", code:"ELA.6.R.3.4", stem:"Paragraph 4 mainly appeals to the reader's",
+     opts:["logic, by giving statistics","emotions, by painting a picture of a tired, struggling student","trust, by quoting an expert","sense of humor, by telling a joke"], a:1,
+     why:"Picture an eleven-year-old... with aching legs and a foggy mind is designed to make readers feel sympathy. That is pathos."},
+    {skill:"Faulty reasoning", code:"ELA.6.R.2.4", stem:"Which best describes the problem with the reasoning in paragraph 5?",
+     opts:["It attacks the people who disagree instead of their ideas.","It says the idea is right because everyone agrees with it.","There is no problem; the reasoning is strong.","It makes a big conclusion about every student based on just one example."], a:3,
+     why:"One cousin's grades cannot prove recess will raise every student's grades. That is a hasty generalization. Look for the broken link between evidence and claim."},
+    {skill:"Counterclaim", code:"ELA.6.R.2.4", stem:"How does the author respond to the counterclaim in paragraph 6?",
+     opts:["He ignores it and moves on.","He says teachers who disagree do not care about students.","He admits it is a fair concern, then explains how a short break could actually save class time.","He changes his claim to say recess should only be for younger kids."], a:2,
+     why:"He acknowledges the concern (That is a fair concern) and then rebuts it with reasoning: rested students learn faster, so time is gained back."}
+  ],
+  lock:"Choose one appeal Marcus uses. Name it (ethos, pathos, or logos), copy the words, and explain how it tries to convince the reader." },
+
+{ id:"d5", color:"var(--d5)", tab:"Word Power", title:"Word Power & Paired Texts: Roots, Context & Comparing",
+  time:"About 40 minutes", codes:["ELA.6.V.1.2","ELA.6.V.1.3","ELA.6.R.3.3"],
+  blurb:"Vocabulary and paired-text questions are a big part of the test. You will break words apart, use context, and compare two texts on the same topic.",
+  lesson:{ intro:"Big words are built from small parts. And when you compare two texts, keep the topic the same and look at how each author treats it.",
+    cards:[
+      {h:"Roots, prefixes, suffixes", p:"The root holds the core meaning. A prefix comes before it and a suffix comes after. Examples: lumin = light, port = carry, inter- = between, re- = again, -ion = act or process. Build the meaning, then test it in the sentence.", code:"ELA.6.V.1.2"},
+      {h:"Context & connotation", p:"Denotation is the dictionary meaning. Connotation is the feeling a word carries. Quiet and eerie can both mean silent, but eerie feels creepy. Use nearby words as clues and always check the whole sentence.", code:"ELA.6.V.1.3"},
+      {h:"Comparing two texts", p:"Hold the topic steady. Then ask: How does each text present it? What does each focus on? What idea do both share? Use evidence from BOTH texts.", code:"ELA.6.R.3.3"}
+    ],
+    trap:"A word nearby is not always the right clue. Read the full sentence before choosing a meaning. For paired texts, an answer that only fits one text is wrong when the question asks about both." },
+  example:{ text:"The bay glowed blue at night because of bioluminescent plankton.",
+    q:"What does bioluminescent most likely mean?",
+    steps:["Break it apart: bio = life, lumin = light, -escent = becoming or giving off.","Build it: giving off light made by a living thing.","Test it in context: the bay glowed because of tiny living plankton. It fits.","Answer: producing light from a living body."] },
+  passage:{ title:"Paired Texts: When the Power Goes Out", type:"paired" },
+  qs:[
+    {skill:"Root meaning", code:"ELA.6.V.1.2", stem:"In Text A, the lantern's glow “barely illuminated the kitchen table.” The root lumin means “light.” What does illuminated mean?",
+     opts:["Lit up","Cleaned off","Moved across","Hid from view"], a:0,
+     why:"The root lumin means light, so illuminated means lit up. Test it: the lantern barely lit up the table. It fits."},
+    {skill:"Prefix meaning", code:"ELA.6.V.1.2", stem:"In Text B, restoring power is called an “interconnected job.” Based on the prefix inter-, what does interconnected mean?",
+     opts:["Not connected at all","Connected only one time","Connected to one another, so each part depends on the others","Connected again after breaking"], a:2,
+     why:"The prefix inter- means between or among. The next sentence confirms it: power lines, substations, and plants all depend on one another."},
+    {skill:"Context clues", code:"ELA.6.V.1.3", stem:"In Text A, the family built “a makeshift table out of a cooler and an old door.” What does makeshift mean?",
+     opts:["Expensive and carefully designed","Made quickly from whatever was available","Broken beyond repair","Bought at a store"], a:1,
+     why:"Use the clue: a cooler and an old door are not normal table parts. They used what they had, so makeshift means a temporary fix made from available items."},
+    {skill:"Connotation", code:"ELA.6.V.1.3", stem:"Text A says the house was “eerily silent” instead of simply “quiet.” What does the word eerily add?",
+     opts:["A strange, uneasy feeling","A peaceful, relaxing feeling","A feeling of excitement","A feeling of anger"], a:0,
+     why:"Both words mean without sound (denotation), but eerily carries a creepy, uneasy connotation. It shows how unsettling the outage felt."},
+    {skill:"Compare presentation", code:"ELA.6.R.3.3", stem:"How do Text A and Text B present the topic of power outages differently?",
+     opts:["Text A explains the repair steps, while Text B tells about one family's feelings.","Both texts are personal stories told in first person.","Both texts mainly give instructions for building a generator.","Text A shows a personal experience and feelings during an outage, while Text B explains the steps workers follow to restore power."], a:3,
+     why:"Hold the topic steady. Text A is a personal narrative full of sights, sounds, and feelings. Text B is informational and explains a process in order. A has them reversed."},
+    {skill:"Shared idea", code:"ELA.6.R.3.3", stem:"Which idea is found in BOTH texts?",
+     opts:["Recovering from a power outage depends on people helping one another.","Generators are dangerous and should not be used.","Hospitals always get power back last.","Hurricanes only affect small towns."], a:0,
+     why:"Find evidence in both: Mr. Okafor shares his generator in Text A, and line workers come from other states in Text B. C is false because Text B says hospitals are fixed early."}
+  ],
+  lock:"Choose one word from either text that has a Greek or Latin root or a prefix. Break it into parts and explain how the parts build its meaning." }
+];
+
+const STRATS = [
+  ["Plot", "Trace the chain: action, response, decision, consequence."],
+  ["Theme", "Write a complete sentence about life, then prove it with a detail."],
+  ["Narrator", "Ask what the narrator knows, and what they do not know."],
+  ["Figurative language", "Name the device, then explain its meaning and tone."],
+  ["Central idea", "Unite the details that repeat across the whole text."],
+  ["Argument", "Map claim, evidence, reasoning. Look for the broken link."],
+  ["Paired texts", "Hold the topic steady and use evidence from both texts."],
+  ["Vocabulary", "Break the word into parts, then test it in the sentence."]
+];
+
+/* ---------- STATE (autosaves on this device) ---------- */
+const STORE = "ll-pm2-reading-bootcamp-v1";
+let S = { name:"", view:"start", ans:{}, notes:{}, revealed:{} };
+try { const raw = localStorage.getItem(STORE); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch(e) {}
+function save(){
+  try { localStorage.setItem(STORE, JSON.stringify(S));
+    const el = document.getElementById("saved"); el.textContent = "Saved on this iPad ✓"; clearTimeout(save.t);
+    save.t = setTimeout(()=> el.textContent = "Your work saves on this iPad.", 1600);
+  } catch(e) {}
+}
+const dayAns = id => (S.ans[id] ||= []);
+const answeredCount = d => dayAns(d.id).filter(v => v !== null && v !== undefined).length;
+const dayScore = d => d.qs.reduce((n,q,i)=> n + (dayAns(d.id)[i] === q.a ? 1 : 0), 0);
+const dayDone = d => answeredCount(d) === d.qs.length;
+
+/* ---------- READ ALOUD (Google US English first) ---------- */
+let voice = null, speakingBtn = null;
+function pickVoice(){
+  const vs = speechSynthesis.getVoices();
+  voice = vs.find(v => v.name === "Google US English")
+       || vs.find(v => v.lang === "en-US" && /Samantha|Allison|Ava|Susan|Zira|Female/i.test(v.name))
+       || vs.find(v => v.lang === "en-US") || null;
+}
+if ("speechSynthesis" in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text, btn){
+  if (!("speechSynthesis" in window)) return;
+  const wasMe = speakingBtn === btn;
+  speechSynthesis.cancel();
+  if (speakingBtn){ speakingBtn.classList.remove("on"); speakingBtn.innerHTML = "🔊 Read to me"; }
+  speakingBtn = null;
+  if (wasMe) return;
+  const u = new SpeechSynthesisUtterance(text.replace(/ELA\.[\w.]+/g, "").replace(/\s+/g," "));
+  if (voice) u.voice = voice; u.lang = "en-US"; u.rate = 0.92;
+  u.onend = u.onerror = () => { if (speakingBtn === btn){ btn.classList.remove("on"); btn.innerHTML = "🔊 Read to me"; speakingBtn = null; } };
+  speakingBtn = btn; btn.classList.add("on"); btn.innerHTML = "⏹ Stop";
+  speechSynthesis.speak(u);
+}
+const speakBtn = id => `<button class="speak" data-speak="${id}" type="button">🔊 Read to me</button>`;
+const readable = el => { const c = el.cloneNode(true); c.querySelectorAll(".no-read").forEach(n=>n.remove()); return c.textContent; };
+
+/* ---------- RENDER ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+function renderRing(){
+  $("#ring").innerHTML = DAYS.map(d => dayDone(d) ? KEY_SVG(d.color, d.color) : KEY_SVG("none","rgba(255,255,255,.45)")).join("");
+}
+function renderTabs(){
+  const items = [{id:"start", tab:"Start Here", color:"var(--gold)"}, ...DAYS, {id:"finish", tab:"Unlock Certificate", color:"var(--gold)"}];
+  $("#tabs").innerHTML = items.map((d,i) => {
+    const lab = d.id.startsWith("d") ? `Day ${i}: ${d.tab}` : d.tab;
+    const done = d.qs && dayDone(d) ? `<span class="done" aria-label="complete">✓</span>` : "";
+    return `<button class="tab" role="tab" style="--c:${d.color}" aria-selected="${S.view===d.id}" data-go="${d.id}"><span class="dot"></span>${lab}${done}</button>`;
+  }).join("");
+}
+
+function passageHTML(d){
+  const p = d.passage;
+  if (p.type === "prose"){
+    return `<h4>${p.title}</h4><p class="by">${p.by}</p>` + p.paras.map((t,i)=>`<p><span class="pn no-read">${i+1}</span>${esc(t)}</p>`).join("");
+  }
+  if (p.type === "poem"){
+    return `<h4>${p.title}</h4><p class="by">${p.by}</p><div class="poem">` + p.lines.map((l,i)=>
+      `${p.breaks.includes(i)?'<div class="gap"></div>':''}<div><span class="ln no-read">${i+1}</span><span>${esc(l)}</span></div>`).join("") + `</div>`;
+  }
+  if (p.type === "article"){
+    return `<h4>${p.title}</h4><p class="by">${p.by}</p>
+    <p>Along Florida's southern coasts, rows of twisted trees stand with their roots in salt water. They may look messy, but mangroves are some of the hardest-working plants in the state.</p>
+    <figure><svg viewBox="0 0 400 150" role="img" aria-label="Drawing of a red mangrove with arching prop roots in the water and small fish swimming between them">
+      <rect x="0" y="0" width="400" height="150" fill="color-mix(in srgb, var(--d3) 10%, var(--card))"/>
+      <rect x="0" y="92" width="400" height="58" fill="color-mix(in srgb, var(--d4) 28%, var(--card))"/>
+      <ellipse cx="200" cy="38" rx="95" ry="30" fill="var(--d3)"/><ellipse cx="140" cy="48" rx="50" ry="20" fill="var(--d3)" opacity=".8"/><ellipse cx="262" cy="50" rx="52" ry="20" fill="var(--d3)" opacity=".8"/>
+      <g fill="none" stroke="#7a5233" stroke-width="5" stroke-linecap="round">
+        <path d="M200 60 V95"/><path d="M200 70 Q160 70 140 130"/><path d="M200 70 Q240 70 262 130"/><path d="M200 78 Q180 90 172 132"/><path d="M200 78 Q222 90 230 132"/><path d="M200 66 Q120 60 100 128"/><path d="M200 66 Q285 60 302 128"/>
+      </g>
+      <g fill="var(--d2)"><path d="M150 112 l12 -5 v10z"/><circle cx="148" cy="112" r="5"/><path d="M246 120 l12 -5 v10z"/><circle cx="244" cy="120" r="5"/><path d="M196 125 l10 -4 v8z"/><circle cx="194" cy="125" r="4"/></g>
+    </svg><figcaption>Red mangrove prop roots arch into the water like stilts, creating hiding places for young fish.</figcaption></figure>
+    <h6>Trees That Love Salt</h6>
+    <p>Most plants die in salty water, but mangroves have special ways to survive. Some mangroves block much of the salt at their roots. Others push extra salt out through their leaves. Florida is home to three main kinds: red, black, and white mangroves. Red mangroves are the easiest to spot because of their arching “prop roots,” which hold the trees up like stilts.</p>
+    <h6>A Nursery Under the Water</h6>
+    <p>Below the waterline, the tangle of roots creates a safe hiding place for young fish, crabs, and shrimp. Larger predators cannot easily swim between the roots, so baby animals have time to grow. Many fish that people catch for food and sport spend their early lives among mangrove roots.</p>
+    <h6>Living Seawalls</h6>
+    <p>Mangroves also protect the land behind them. When hurricanes push waves toward shore, thick mangrove forests slow the water down and help reduce flooding and erosion. Scientists have found that coastlines with healthy mangroves often suffer less storm damage than coastlines without them.</p>
+    <div class="sidebar"><h5>By the Numbers</h5><dl>
+      <dt>3</dt><dd>main kinds of mangroves in Florida</dd>
+      <dt>About 600,000</dt><dd>acres of mangrove forest in Florida</dd>
+      <dt>1996</dt><dd>year Florida passed its Mangrove Trimming and Preservation Act</dd></dl></div>
+    <h6>Why They Need Us</h6>
+    <p>Over the past century, many of Florida's mangroves were cleared to make room for homes, marinas, and roads. Today, state law protects mangroves, and in many places it is illegal to trim or remove them without a permit. Volunteers also plant young mangroves to help forests grow back. The more we understand these tangled trees, the better we can protect the coasts we all share.</p>
+    <div class="textB"><h6>Text B: A Real Estate Flyer (fictional, 1970s)</h6>
+    <div class="flyer">Imagine waking up to open water views! Our crews are clearing the useless, mosquito-filled swamp along Sunset Bay to build 40 brand-new waterfront homes. Say goodbye to that tangled mess and hello to your own private dock!</div></div>`;
+  }
+  if (p.type === "paired"){
+    return `<h4>${p.title}</h4><p class="by">Two original texts on the same topic</p>
+    <h6>Text A: The Night the Lights Went Out</h6>
+    <p>When the hurricane passed over our town, the power went out at 9:14 p.m. I know because the microwave clock froze, and then the whole house went dark. Without the hum of the refrigerator and the air conditioner, the house was eerily silent. My dad dug a lantern out of the garage, and its weak glow barely illuminated the kitchen table.</p>
+    <p>For four days, we cooked on a camp stove and slept with the windows open. We built a makeshift table out of a cooler and an old door so we could play cards by lantern light. Our neighbor, Mr. Okafor, ran a long extension cord from his generator so we could keep my grandmother's medicine cold.</p>
+    <p>On the fourth night, the ceiling fan suddenly whirred to life, and the whole street cheered like our team had won the championship. I had never been so happy to hear a refrigerator hum.</p>
+    <div class="textB"><h6>Text B: How the Lights Come Back On</h6>
+    <p>After a major hurricane, restoring electricity is a huge, interconnected job. Power plants, substations, and power lines all depend on one another, so crews must repair the system in a careful order.</p>
+    <p>First, workers check power plants and the large transmission lines that transport electricity over long distances. Next, they repair substations and the main lines that serve hospitals, fire stations, and water treatment plants. Only then can crews move to neighborhood lines and individual homes.</p>
+    <p>Utility companies often call in thousands of line workers from other states to help. Because each step depends on the one before it, the restoration process can take days or even weeks.</p></div>`;
+  }
+}
+
+function qHTML(d, q, i){
+  const pick = dayAns(d.id)[i];
+  const answered = pick !== null && pick !== undefined;
+  const opts = q.opts.map((o,k)=>{
+    let cls = "opt";
+    if (answered && k === q.a) cls += " right";
+    else if (answered && k === pick) cls += " wrong";
+    return `<button class="${cls}" data-q="${i}" data-k="${k}" ${answered?"disabled":""} type="button"><span class="l">${"ABCD"[k]}</span><span>${esc(o)}</span></button>`;
+  }).join("");
+  let fb = "";
+  if (answered){
+    const ok = pick === q.a;
+    fb = `<div class="fb ${ok?"ok":"no"}"><b>${ok ? "Unlocked! That's right." : `Not quite. The answer is ${"ABCD"[q.a]}.`}</b>${esc(q.why)}</div>`;
+  }
+  return `<div class="q" id="q${i}"><div class="meta"><span class="skill">Question ${i+1} · ${q.skill} <span class="no-read" style="font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted)">${q.code}</span></span>${speakBtn("q"+i)}</div>
+    <p class="stem">${esc(q.stem)}</p><div class="opts">${opts}</div>${fb}</div>`;
+}
+
+function dayHTML(d, n){
+  const done = dayDone(d);
+  const ex = S.revealed[d.id];
+  return `<section class="hero" style="--c:${d.color}">
+      <div class="eyebrow">Day ${n} of 5 · ${d.time}</div>
+      <h2>${d.title}</h2><p>${d.blurb}</p>
+      <div class="chips">${d.codes.map(c=>`<span class="chip">${c}</span>`).join("")}</div>
+    </section>
+    <div style="--c:${d.color}">
+    <section class="step" id="learn"><div class="step-head"><h3><span class="num">1</span>Learn the Lock</h3>${speakBtn("learn-body")}</div>
+      <div id="learn-body"><p class="intro">${d.lesson.intro}</p>
+      <div class="cards">${d.lesson.cards.map(c=>`<div class="lcard"><h4>${c.h}</h4><p>${c.p}</p><span class="code no-read">${c.code}</span></div>`).join("")}</div>
+      <div class="trap"><strong>Trap alert: </strong>${d.lesson.trap}</div></div>
+    </section>
+    <section class="step"><div class="step-head"><h3><span class="num">2</span>Watch Me Pick It</h3>${speakBtn("ex-body")}</div>
+      <div id="ex-body"><blockquote class="excerpt">${d.example.text}</blockquote>
+      <p class="lockp">${d.example.q}</p>
+      ${ex ? `<ol class="think">${d.example.steps.map(s=>`<li><span>${s}</span></li>`).join("")}</ol>` : `<p class="hint">Think about it first. Then show the steps a strong reader uses.</p>`}</div>
+      ${ex ? "" : `<button class="reveal" data-reveal="${d.id}" type="button">Show me the steps</button>`}
+    </section>
+    <section class="step"><div class="step-head"><h3><span class="num">3</span>Your Turn</h3><span class="score">Score: ${dayScore(d)} / ${d.qs.length}</span></div>
+      <p class="hint" style="margin-top:-4px">Read the passage first. You get one try on each question, so go back to the text before you tap.</p>
+      <div class="practice">
+        <article class="passage" id="passage"><div style="display:flex;justify-content:flex-end;margin-bottom:6px">${speakBtn("passage-body")}</div><div id="passage-body">${passageHTML(d)}</div></article>
+        <div class="qlist">${d.qs.map((q,i)=>qHTML(d,q,i)).join("")}</div>
+      </div>
+    </section>
+    <section class="step"><div class="step-head"><h3><span class="num">4</span>Lock It In</h3>${speakBtn("lock-p")}</div>
+      <p class="lockp" id="lock-p">${d.lock}</p>
+      <label class="hint" for="note-${d.id}">Type your answer. It saves automatically.</label>
+      <textarea id="note-${d.id}" data-note="${d.id}">${esc(S.notes[d.id]||"")}</textarea>
+      ${done ? `<div class="keyban">${KEY_SVG(d.color,d.color)}<div><b style="font-family:var(--display);font-size:20px;font-weight:400">Day ${n} key earned!</b><br>You scored ${dayScore(d)} out of ${d.qs.length}. ${dayScore(d) >= 5 ? "This skill is unlocked." : "Reread the explanations for any you missed before moving on."}</div></div>` : ""}
+    </section>
+    <div class="navbtns">
+      <button class="btn ghost" data-go="${n===1?"start":DAYS[n-2].id}" type="button">← Back</button>
+      <button class="btn" data-go="${n===5?"finish":DAYS[n].id}" type="button">${n===5?"Go to my certificate →":`Day ${n+1} →`}</button>
+    </div></div>`;
+}
+
+function startHTML(){
+  return `<section class="hero" style="--c:var(--gold)">
+    <div class="eyebrow">One week · Five keys · Self-guided</div>
+    <h2>Unlock your reading score before PM2</h2>
+    <p>This boot camp teaches the reading moves that show up on the Grade 6 FAST. Do one day at a time. Each day you earn a key. Collect all five keys to unlock your certificate.</p></section>
+    <section class="step" style="--c:var(--gold)"><div class="step-head"><h3>How each day works</h3>${speakBtn("how")}</div>
+    <div class="how" id="how">
+      <div><b>1. Learn the Lock</b>A short lesson on the skill and the trap that catches most students.</div>
+      <div><b>2. Watch Me Pick It</b>See a strong reader think through a question step by step.</div>
+      <div><b>3. Your Turn</b>Read an original passage and answer six FAST-style questions. One try each.</div>
+      <div><b>4. Lock It In</b>Write a short response to prove you own the skill.</div>
+    </div></section>
+    <section class="step"><div class="step-head"><h3>Your week</h3></div>
+    <ul class="plan">${DAYS.map((d,i)=>`<li style="--c:${d.color}"><span class="d">Day ${i+1}</span><span>${d.title}</span><span class="score">${dayDone(d)?`🔑 ${dayScore(d)}/6`:`${answeredCount(d)}/6`}</span></li>`).join("")}</ul>
+    <p class="hint" style="margin-top:12px">Tip: Type your name at the top first. Your answers save on this iPad, so you can leave and come back.</p></section>
+    <div class="navbtns"><span></span><button class="btn gold" data-go="d1" type="button">Start Day 1 →</button></div>`;
+}
+
+function finishHTML(){
+  const all = DAYS.every(dayDone);
+  const total = DAYS.reduce((n,d)=>n+dayScore(d),0);
+  const rows = DAYS.map((d,i)=>`<tr><td>Day ${i+1}</td><td>${d.tab}</td><td>${dayDone(d)?`${dayScore(d)} / 6`:"Not finished"}</td></tr>`).join("");
+  const teacher = `<section class="step"><div class="step-head"><h3>For your teacher</h3></div>
+    <p class="hint">Copy your results and paste them where your teacher asks (Canvas or the class form).</p>
+    <div class="confirm"><button class="btn" id="copy" type="button">Copy my results</button><span id="copied" class="hint"></span></div>
+    <div class="confirm" style="margin-top:14px" id="resetbox"><button class="btn ghost" id="reset" type="button">Start the boot camp over</button></div></section>`;
+  if (!all){
+    return `<section class="hero" style="--c:var(--gold)"><div class="eyebrow">Almost there</div><h2>Collect all five keys</h2>
+      <p>Finish every question on all five days to unlock your certificate.</p></section>
+      <section class="step"><div class="tbl"><table><tr><th>Day</th><th>Skill</th><th>Score</th></tr>${rows}</table></div></section>${teacher}`;
+  }
+  return `<section class="cert" style="--c:var(--gold)">
+      <div class="ring" style="justify-content:center">${DAYS.map(d=>KEY_SVG(d.color,d.color)).join("")}</div>
+      <p class="hint" style="margin:10px 0 0">The Literacy Locksmith certifies that</p>
+      <div class="nm">${esc(S.name || "A Super Reader")}</div>
+      <h2>unlocked all five reading keys</h2>
+      <p>Total score: <span class="score">${total} / 30</span></p>
+      <div class="tbl"><table><tr><th>Day</th><th>Skill</th><th>Score</th></tr>${rows}</table></div>
+      <h3 style="margin-top:18px">Your Key Ring of Strategies for PM2</h3>
+      <div class="strats">${STRATS.map(s=>`<div><b>${s[0]}:</b> ${s[1]}</div>`).join("")}</div>
+    </section><div style="height:18px"></div>${teacher}`;
+}
+
+function render(){
+  renderRing(); renderTabs();
+  const v = $("#view");
+  if (S.view === "start") v.innerHTML = startHTML();
+  else if (S.view === "finish"){ v.innerHTML = finishHTML(); if (DAYS.every(dayDone)) confetti(260); }
+  else { const n = DAYS.findIndex(d=>d.id===S.view); v.innerHTML = dayHTML(DAYS[n], n+1); }
+  $("#sname").value = S.name || "";
+}
+
+/* ---------- EVENTS ---------- */
+document.addEventListener("click", e => {
+  const go = e.target.closest("[data-go]");
+  if (go){ window.speechSynthesis?.cancel(); speakingBtn = null; S.view = go.dataset.go; save(); render(); window.scrollTo({top:0}); return; }
+  const sp = e.target.closest("[data-speak]");
+  if (sp){
+    const id = sp.dataset.speak; let text = "";
+    if (id.startsWith("q")){ const d = DAYS.find(x=>x.id===S.view), q = d.qs[+id.slice(1)];
+      text = q.stem + ". " + q.opts.map((o,k)=>`${"ABCD"[k]}. ${o}`).join(". "); }
+    else text = readable(document.getElementById(id));
+    speak(text, sp); return;
+  }
+  const rv = e.target.closest("[data-reveal]");
+  if (rv){ S.revealed[rv.dataset.reveal] = true; save(); render(); return; }
+  const op = e.target.closest(".opt");
+  if (op && !op.disabled){
+    const d = DAYS.find(x=>x.id===S.view), i = +op.dataset.q, k = +op.dataset.k;
+    const wasDone = dayDone(d);
+    dayAns(d.id)[i] = k; save();
+    const y = window.scrollY; render(); window.scrollTo({top:y});
+    if (k === d.qs[i].a) confetti(18, op);
+    if (!wasDone && dayDone(d)) confetti(140);
+    return;
+  }
+  if (e.target.id === "copy"){
+    const lines = [`PM2 Reading Boot Camp: ${S.name||"(no name)"}`, ...DAYS.map((d,i)=>`Day ${i+1} ${d.tab}: ${dayDone(d)?dayScore(d)+"/6":"not finished"}`), `Total: ${DAYS.reduce((n,d)=>n+dayScore(d),0)}/30`];
+    const txt = lines.join("\n");
+    const done = m => $("#copied").textContent = m;
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(txt).then(()=>done("Copied!"), ()=>done(txt));
+    else done(txt);
+    return;
+  }
+  if (e.target.id === "reset"){
+    $("#resetbox").innerHTML = `<span><b>Erase all answers on this iPad?</b></span><button class="btn" id="resetyes" type="button" style="background:var(--bad)">Yes, erase</button><button class="btn ghost" id="resetno" type="button">Cancel</button>`;
+    return;
+  }
+  if (e.target.id === "resetyes"){ S = { name:"", view:"start", ans:{}, notes:{}, revealed:{} }; save(); render(); return; }
+  if (e.target.id === "resetno"){ render(); return; }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "sname"){ S.name = e.target.value; save(); }
+  if (e.target.dataset.note){ S.notes[e.target.dataset.note] = e.target.value; save(); }
+});
+
+/* ---------- CONFETTI ---------- */
+const fx = document.getElementById("fx"), cx = fx.getContext("2d"); let parts = [], running = false;
+const COLORS = ["#d9483d","#d97412","#f0b744","#24895a","#2a6fc4","#7d45c4"];
+function confetti(n, from){
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  fx.width = innerWidth; fx.height = innerHeight;
+  let ox = innerWidth/2, oy = innerHeight/3;
+  if (from){ const r = from.getBoundingClientRect(); ox = r.left + r.width/2; oy = r.top + r.height/2; }
+  for (let i=0;i<n;i++) parts.push({x:ox, y:oy, vx:(Math.random()-.5)*(from?8:16), vy:-Math.random()*(from?7:14)-2, s:Math.random()*6+4, c:COLORS[i%COLORS.length], r:Math.random()*6, vr:(Math.random()-.5)*.3, life:0});
+  if (!running){ running = true; requestAnimationFrame(tick); }
+}
+function tick(){
+  cx.clearRect(0,0,fx.width,fx.height);
+  parts.forEach(p=>{ p.vy += .32; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; p.life++;
+    cx.save(); cx.translate(p.x,p.y); cx.rotate(p.r); cx.fillStyle = p.c; cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2); cx.restore(); });
+  parts = parts.filter(p => p.y < fx.height + 20 && p.life < 400);
+  if (parts.length) requestAnimationFrame(tick); else { running = false; cx.clearRect(0,0,fx.width,fx.height); }
+}
+
+/* ---------- LOGO (drop in the real file) ---------- */
+const LOGO_SRC = ""; // paste the Literacy Locksmith logo data URI here
+if (LOGO_SRC){ const l = document.getElementById("logo"); l.src = LOGO_SRC; l.hidden = false; }
+
+render();
+</script>
+</body>
+</html>
